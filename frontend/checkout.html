@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout | Pillows & Candles</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; }
+        .checkout-container { max-width: 1000px; margin: 40px auto; padding: 20px; }
+        @media (max-width: 1024px) {
+            /* Adjust layout for smaller screens */
+            .checkout-container { margin: 10px; padding: 0; }
+            .lg\:col-span-2 { order: 2; } /* Put details below summary on mobile */
+            .lg\:col-span-1 { order: 1; } /* Put summary/payment at the top */
+        }
+        .item-row { display: flex; align-items: center; }
+        
+        /* Style for the fixed message container */
+        #message-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 50;
+            width: 100%;
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Global Message Container for UI Feedback -->
+    <!-- cart.js uses this ID to display messages -->
+    <div id="message-container"></div>
+
+    <div class="checkout-container">
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Checkout</h1>
+            <p class="text-gray-500">Review your order and complete the payment via Mpesa.</p>
+            <a href="index.html" class="text-blue-600 hover:text-blue-800 text-sm block mt-2 font-semibold flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                </svg>
+                Continue Shopping
+            </a>
+        </header>
+
+        <!-- Main Layout: Grid for Desktop, Stacked for Mobile (due to CSS order change) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- COLUMN 3: Price Details and Payment Button (Moves to top on mobile) -->
+            <div class="lg:col-span-1">
+                <div class="sticky top-10 bg-white p-6 rounded-xl shadow-lg border border-gray-100 mb-8 lg:mb-0">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Total Payable</h2>
+                    
+                    <div class="space-y-2 text-gray-600">
+                        <div class="flex justify-between">
+                            <span>Subtotal:</span>
+                            <span id="subtotal" class="font-medium text-gray-800">Ksh 0.00</span>
+                        </div>
+                        <div class="flex justify-between border-t border-gray-200 pt-4 mt-4">
+                            <span class="text-xl font-bold">Grand Total:</span>
+                            <span id="total-price" class="text-2xl font-extrabold text-green-600">Ksh 0.00</span>
+                        </div>
+                    </div>
+
+                    <p class="text-sm text-gray-500 mt-4">The payment request is simulated using a mock backend endpoint.</p>
+
+                    <!-- The button is linked to the form below -->
+                    <button id="pay-button" form="checkout-form" type="submit" disabled
+                        class="mt-6 w-full py-3 px-4 bg-green-600 text-white font-bold rounded-lg shadow-xl hover:bg-green-700 
+                                transition duration-200 focus:outline-none focus:ring-4 focus:ring-green-500 focus:ring-opacity-50 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                        Pay with Mpesa
+                    </button>
+                    <p id="loading-message" class="hidden mt-3 text-center text-blue-500 font-semibold">Processing payment (Up to 4 seconds delay)...</p>
+                </div>
+            </div>
+
+            <!-- COLUMN 1 & 2: Order Summary and Customer Info (Order 2 on mobile) -->
+            <div class="lg:col-span-2 space-y-8">
+
+                <!-- Order Summary -->
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Order Items (<span id="item-count">0</span> Unique Items)</h2>
+                    <div id="cart-items-container" class="space-y-4 divide-y divide-gray-100">
+                        <!-- Cart items will be rendered here -->
+                        <div id="empty-cart-message" class="text-center py-10 text-gray-500 hidden">
+                            Your cart is empty. Please add items before checking out.
+                            <a href="index.html" class="text-blue-500 hover:underline block mt-4 font-semibold p-2 rounded-lg bg-blue-50">Go to Products Page</a>
+                        </div>
+                    </div>
+                    <button id="clear-cart-button" class="mt-4 text-red-500 hover:text-red-700 text-sm font-medium transition duration-150">
+                        Clear Cart
+                    </button>
+                </div>
+                
+                <!-- Shipping Information Form -->
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Customer Details</h2>
+                    <form id="checkout-form" class="space-y-4">
+                        <div>
+                            <label for="customer-name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                            <input type="text" id="customer-name" required placeholder="Jane Doe"
+                                class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                        </div>
+                        <div>
+                            <label for="customer-phone" class="block text-sm font-medium text-gray-700">Phone Number (Safaricom/Mpesa)</label>
+                            <!-- Input pattern ensures phone starts with 07 and has 10 digits total -->
+                            <input type="tel" id="customer-phone" required pattern="07[0-9]{8}" placeholder="07xxxxxxxx"
+                                class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm p-3 border focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                            <p class="text-xs text-gray-400 mt-1">Required format: Must start with 07 (e.g., 0712345678)</p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Imports -->
+    <script src="js/cart.js"></script> 
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check for required global functions from cart.js
+            if (typeof getCart === 'undefined' || typeof displayMessage === 'undefined') {
+                 console.error("Critical Error: cart.js dependencies failed to load.");
+                 return;
+            }
+
+            const form = document.getElementById('checkout-form');
+            const cartItemsContainer = document.getElementById('cart-items-container');
+            const emptyMessage = document.getElementById('empty-cart-message');
+            const subtotalEl = document.getElementById('subtotal');
+            const totalEl = document.getElementById('total-price');
+            const itemCountEl = document.getElementById('item-count');
+            const payButton = document.getElementById('pay-button');
+            const loadingMessage = document.getElementById('loading-message');
+            const clearCartButton = document.getElementById('clear-cart-button');
+
+            let currentCart = getCart();
+
+            // Helper to format currency
+            const formatCurrency = (amount) => `Ksh ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2 })}`;
+
+            // --- Rendering Functions ---
+
+            function renderCartItems() {
+                currentCart = getCart(); // Always use the latest cart data
+                cartItemsContainer.innerHTML = '';
+                
+                if (currentCart.length === 0) {
+                    // Show empty state
+                    emptyMessage.classList.remove('hidden');
+                    payButton.disabled = true;
+                    clearCartButton.classList.add('hidden');
+                } else {
+                    // Show items
+                    emptyMessage.classList.add('hidden');
+                    payButton.disabled = false;
+                    clearCartButton.classList.remove('hidden');
+                }
+
+                const subtotal = calculateCartTotal(currentCart);
+                
+                // Update totals
+                itemCountEl.textContent = currentCart.length;
+                subtotalEl.textContent = formatCurrency(subtotal);
+                totalEl.textContent = formatCurrency(subtotal); // No shipping/tax in this version
+
+                currentCart.forEach(item => {
+                    const itemTotal = item.price * item.quantity;
+                    const itemHtml = `
+                        <div class="item-row py-3 justify-between">
+                            <img src="${BACKEND_URL}/images/${item.image}" 
+                                 onerror="this.onerror=null; this.src='https://placehold.co/50x50/888888/ffffff?text=Image';"
+                                 alt="${item.name}" class="w-12 h-12 object-cover rounded-lg mr-4 shadow-sm flex-shrink-0">
+                            <div class="flex-grow min-w-0">
+                                <p class="font-medium text-gray-800 truncate">${item.name}</p>
+                                <p class="text-sm text-gray-500">${formatCurrency(item.price)} x ${item.quantity}</p>
+                            </div>
+                            <div class="flex flex-col items-end flex-shrink-0 ml-4">
+                                <span class="font-semibold text-gray-900 mb-1">${formatCurrency(itemTotal)}</span>
+                                <button onclick="window.removeFromCart(${item.id}); renderCartItems();" 
+                                        type="button"
+                                        class="text-xs text-red-500 hover:text-red-700 transition duration-150">
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    cartItemsContainer.insertAdjacentHTML('beforeend', itemHtml);
+                });
+            }
+
+            // --- Event Listeners ---
+            
+            // Listen for changes saved by cart.js on other pages (e.g., adding an item from index.html)
+            window.addEventListener('cartUpdated', renderCartItems);
+            
+            // Clear cart button listener
+            clearCartButton.addEventListener('click', () => {
+                window.clearCart();
+                renderCartItems(); // Re-render after clearing
+            });
+
+            // Payment Submission Handler
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                if (currentCart.length === 0) {
+                    displayMessage('Cannot checkout with an empty cart.', 'error');
+                    return;
+                }
+                
+                // Get customer data from form
+                const name = document.getElementById('customer-name').value.trim();
+                const phone = document.getElementById('customer-phone').value.trim();
+                
+                // Frontend form validation check (pattern defined in HTML input)
+                if (!name || !phone || !form.checkValidity()) {
+                    displayMessage('Please ensure all required details are correctly filled (Phone format: 07xxxxxxxx).', 'error');
+                    return;
+                }
+                
+                // Prepare the payload for the Mpesa mock backend
+                const payload = {
+                    name,
+                    phone,
+                    cart: currentCart // Send the full cart array to the backend
+                };
+
+                // Disable button and show loading state
+                payButton.disabled = true;
+                loadingMessage.classList.remove('hidden');
+                payButton.textContent = 'Awaiting Mpesa Response...';
+
+                try {
+                    // Added a small artificial delay to simulate network latency and Mpesa processing time
+                    await new Promise(resolve => setTimeout(resolve, 2000)); 
+
+                    const response = await fetch(`${BACKEND_URL}/api/mpesa/pay`, {
+                        method: "POST",
+                        headers: { 
+                            "Content-Type": "application/json" 
+                        },
+                        body: JSON.stringify(payload),
+                    });
+
+                    const data = await response.json();
+
+                    // Handle successful response (backend mock returns success: true)
+                    if (response.ok && data.success) {
+                        displayMessage(`SUCCESS! ${data.message} (TX ID: ${data.transactionId})`, 'success');
+                        window.clearCart(); // Clear cart after successful payment
+                    } else {
+                        // Handle failure responses (e.g., 500 from mock route)
+                        displayMessage(`PAYMENT FAILED: ${data.message || 'Unknown error occurred.'}`, 'error');
+                    }
+
+                } catch (err) {
+                    console.error("Fetch error during payment:", err);
+                    displayMessage('Network error occurred. The server may be unreachable.', 'error');
+                } finally {
+                    // Reset UI state
+                    payButton.disabled = false;
+                    loadingMessage.classList.add('hidden');
+                    payButton.textContent = 'Pay with Mpesa';
+                    renderCartItems(); // Re-render to show empty cart or current items
+                }
+            });
+
+            // Initial render when the page loads
+            renderCartItems();
+        });
+    </script>
+</body>
+</html>

@@ -7,6 +7,7 @@ const path = require("path");
 const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");  
 const userRoutes = require("./routes/userRoutes"); 
+const mpesaRoutes = require("./routes/mpesaRoutes");
 
 //  CONFIGURATION 
 const app = express();
@@ -47,13 +48,14 @@ app.get("/", (req, res) => {
 //  Link User Routes to the server
 app.use("/api/users", userRoutes); 
 
+//  Link Mpesa Routes to the server
+app.use("/api/mpesa", mpesaRoutes); 
+
 app.get("/api/products", (req, res) => {
+  // Return the locally loaded product data
   res.json(products);
 });
 
-// Import and Register user routes here
-
-app.use("/api/users", userRoutes); 
 
 //  SERVER START 
 app.listen(PORT, () => {
