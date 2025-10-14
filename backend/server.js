@@ -5,6 +5,8 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const mongoose = require("mongoose");
+const cookieParser = require("cookie-parser");  
+const userRoutes = require("./routes/userRoutes"); 
 
 //  CONFIGURATION 
 const app = express();
@@ -21,6 +23,7 @@ mongoose
 //  MIDDLEWARE 
 app.use(express.json());
 app.use(cors());
+app.use(cookieParser());// Use of cookie-parser middleware
 
 // Serve static images safely
 app.use("/images", express.static(path.join(__dirname, "images")));
@@ -41,12 +44,15 @@ app.get("/", (req, res) => {
   res.send(" Pillows & Candles Backend is Running...");
 });
 
+//  Link User Routes to the server
+app.use("/api/users", userRoutes); 
+
 app.get("/api/products", (req, res) => {
   res.json(products);
 });
 
 // Import and Register user routes here
-const userRoutes = require("./routes/userRoutes");
+
 app.use("/api/users", userRoutes); 
 
 //  SERVER START 
