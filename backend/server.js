@@ -8,6 +8,8 @@ const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");  
 const userRoutes = require("./routes/userRoutes"); 
 const mpesaRoutes = require("./routes/mpesaRoutes");
+// Assuming you have a cartRoutes file that defines the cart API
+const cartRoutes = require("./routes/cartRoutes"); 
 
 //  CONFIGURATION 
 const app = express();
@@ -23,7 +25,8 @@ mongoose
 
 //  MIDDLEWARE 
 app.use(express.json());
-app.use(cors());
+// Allow all origins for CORS during development/testing
+app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());// Use of cookie-parser middleware
 
 // Serve static images safely
@@ -32,9 +35,14 @@ app.use("/images", express.static(path.join(__dirname, "images")));
 //  LOAD LOCAL PRODUCTS 
 try {
   const dataPath = path.join(__dirname, "products.json");
-  const productsJson = fs.readFileSync(dataPath, "utf8");
-  products = JSON.parse(productsJson);
-  console.log(` Loaded ${products.length} products successfully.`);
+  // Check if file exists to prevent hard crash
+  if (fs.existsSync(dataPath)) {
+    const productsJson = fs.readFileSync(dataPath, "utf8");
+    products = JSON.parse(productsJson);
+    console.log(` Loaded ${products.length} products successfully.`);
+  } else {
+    console.error("products.json not found. Product routes will return empty array.");
+  }
 } catch (error) {
   console.error("Failed to load products.json. Check path or syntax.");
   console.error(error.message);
@@ -51,13 +59,39 @@ app.use("/api/users", userRoutes);
 //  Link Mpesa Routes to the server
 app.use("/api/mpesa", mpesaRoutes); 
 
+//  Link Cart Routes to the server
+app.use("/api/cart", cartRoutes); 
+
+// --- NEW ROUTE: Get All Products ---
 app.get("/api/products", (req, res) => {
-  // Return the locally loaded product data
-  res.json(products);
+    // Returns the entire array of products loaded from the JSON file
+    res.status(200).json(products);
 });
 
+//  EXISTING ROUTE: Get Single Product
+app.get("/api/products/:id", (req, res) => {
+    // Extract the ID from the URL parameters and ensure it's treated as a number
+    const productId = parseInt(req.params.id);
 
-//  SERVER START 
-app.listen(PORT, () => {
-  console.log(` Server running at http://localhost:${PORT}`);
+    // Find the product in the local array
+    const product = products.find(p => p.id === productId);
+
+    if (product) {
+        // If the product is found, return it
+        res.status(200).json(product);
+    } else {
+        // If no product matches the ID, return a 404
+        res.status(404).json({ message: "Product not found" });
+    }
 });
+
+// Global Error Handler Middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.statusCode || 500).json({
+    message: err.message || "An unexpected server error occurred.",
+  });
+});
+
+//  START SERVER
+app.listen(PORT, () => console.log(` Pillows & Candles Backend running on port ${PORT}`));
